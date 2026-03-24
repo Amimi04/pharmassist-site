@@ -1,0 +1,85 @@
+<%- include('layout') %>
+<div class="flex items-center justify-between mb-6">
+  <div>
+    <h2 class="text-lg font-semibold text-gray-900">Médicaments (MP)</h2>
+    <p class="text-sm text-gray-500"><%= total.toLocaleString('fr-BE') %> médicament(s)</p>
+  </div>
+  <form method="GET" action="/admin/medicines" class="flex space-x-2">
+    <input type="text" name="search" value="<%= search %>" placeholder="Rechercher..."
+      class="border border-gray-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-64">
+    <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-xl text-sm hover:bg-blue-700 transition">
+      <i class="fas fa-search"></i>
+    </button>
+    <% if (search) { %>
+      <a href="/admin/medicines" class="bg-gray-100 text-gray-600 px-4 py-2 rounded-xl text-sm hover:bg-gray-200 transition">Effacer</a>
+    <% } %>
+  </form>
+</div>
+
+<div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead class="bg-gray-50 border-b border-gray-200">
+        <tr class="text-xs text-gray-500 uppercase tracking-wider">
+          <th class="text-left px-5 py-3 font-medium">Code (MPCV)</th>
+          <th class="text-left px-5 py-3 font-medium">Nom médicament</th>
+          <th class="text-left px-5 py-3 font-medium">Indication</th>
+          <th class="text-left px-5 py-3 font-medium">Catégorie</th>
+          <th class="text-center px-5 py-3 font-medium">Flags</th>
+          <th class="text-center px-5 py-3 font-medium">Dispo.</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100">
+        <% medicines.forEach(med => { %>
+          <tr class="hover:bg-gray-50">
+            <td class="px-5 py-3">
+              <code class="text-xs bg-gray-100 px-2 py-0.5 rounded text-gray-600"><%= med.mpcv %></code>
+            </td>
+            <td class="px-5 py-3 font-medium text-gray-900 max-w-xs">
+              <div class="truncate"><%= med.mpnm %></div>
+            </td>
+            <td class="px-5 py-3 text-gray-500 max-w-xs">
+              <div class="truncate text-xs"><%= med.indication || '—' %></div>
+            </td>
+            <td class="px-5 py-3 text-gray-500 text-xs max-w-xs">
+              <div class="truncate"><%= med.categorie || '—' %></div>
+            </td>
+            <td class="px-5 py-3 text-center">
+              <div class="flex items-center justify-center space-x-1">
+                <% if (med.narcotic) { %><span title="Stupéfiant" class="text-red-500 text-xs">⚠️</span><% } %>
+                <% if (med.orphan) { %><span title="Orphelin" class="text-xs">🔬</span><% } %>
+                <% if (med.bt) { %><span title="Biosimilaire" class="text-xs">🧬</span><% } %>
+                <% if (med.specrules) { %><span title="Règles spéciales" class="text-xs">📜</span><% } %>
+              </div>
+            </td>
+            <td class="px-5 py-3 text-center text-xs">
+              <% if (med.amb && med.hosp) { %><span class="text-green-600">Amb+Hosp</span>
+              <% } else if (med.amb) { %><span class="text-blue-600">Officine</span>
+              <% } else if (med.hosp) { %><span class="text-orange-600">Hosp.</span>
+              <% } else { %><span class="text-gray-400">—</span><% } %>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+  <!-- Pagination -->
+  <% if (pages > 1) { %>
+    <div class="border-t border-gray-100 px-5 py-3 flex items-center justify-between">
+      <p class="text-sm text-gray-500">Page <%= page %> / <%= pages %> — <%= total.toLocaleString('fr-BE') %> résultats</p>
+      <div class="flex space-x-1">
+        <% const maxP = Math.min(pages, 10); for (let i = Math.max(1, page-3); i <= Math.min(maxP, page+3); i++) { %>
+          <a href="?page=<%= i %>&search=<%= search %>" 
+            class="w-8 h-8 flex items-center justify-center rounded-lg text-sm <%= i === page ? 'bg-blue-600 text-white' : 'hover:bg-gray-100 text-gray-600' %>">
+            <%= i %>
+          </a>
+        <% } %>
+        <% if (page < pages) { %>
+          <a href="?page=<%= page+1 %>&search=<%= search %>" class="w-8 h-8 flex items-center justify-center rounded-lg text-sm hover:bg-gray-100 text-gray-600">›</a>
+        <% } %>
+      </div>
+    </div>
+  <% } %>
+</div>
+<%- include('layout_end') %>
+

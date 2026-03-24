@@ -1,0 +1,60 @@
+<%- include('layout') %>
+<div class="flex items-center justify-between mb-6">
+  <div>
+    <h2 class="text-lg font-semibold text-gray-900">Substances actives (INNM)</h2>
+    <p class="text-sm text-gray-500"><%= total.toLocaleString('fr-BE') %> substance(s)</p>
+  </div>
+  <form method="GET" action="/admin/substances" class="flex space-x-2">
+    <input type="text" name="search" value="<%= search %>" placeholder="Rechercher substance..."
+      class="border border-gray-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-64">
+    <button type="submit" class="bg-teal-600 text-white px-4 py-2 rounded-xl text-sm hover:bg-teal-700 transition">
+      <i class="fas fa-search"></i>
+    </button>
+  </form>
+</div>
+<div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead class="bg-gray-50 border-b border-gray-200">
+        <tr class="text-xs text-gray-500 uppercase tracking-wider">
+          <th class="text-left px-5 py-3 font-medium">Code</th>
+          <th class="text-left px-5 py-3 font-medium">Nom FR</th>
+          <th class="text-left px-5 py-3 font-medium">Nom NL</th>
+          <th class="text-left px-5 py-3 font-medium">Base FR</th>
+          <th class="text-center px-5 py-3 font-medium">Disponibilité</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100">
+        <% substances.forEach(s => { %>
+          <tr class="hover:bg-gray-50">
+            <td class="px-5 py-3"><code class="text-xs bg-gray-100 px-2 py-0.5 rounded text-gray-600"><%= s.stofcv %></code></td>
+            <td class="px-5 py-3 font-medium text-gray-900"><%= s.finnm || '—' %></td>
+            <td class="px-5 py-3 text-gray-500"><%= s.ninnm || '—' %></td>
+            <td class="px-5 py-3 text-gray-400 text-xs"><%= s.fbase || '—' %></td>
+            <td class="px-5 py-3 text-center text-xs">
+              <% if (s.amb && s.hosp) { %><span class="text-green-600">Amb+Hosp</span>
+              <% } else if (s.amb) { %><span class="text-blue-600">Officine</span>
+              <% } else if (s.hosp) { %><span class="text-orange-600">Hospitalier</span>
+              <% } else { %><span class="text-gray-400">—</span><% } %>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+  <% if (pages > 1) { %>
+    <div class="border-t border-gray-100 px-5 py-3 flex items-center justify-between">
+      <p class="text-sm text-gray-500">Page <%= page %> / <%= pages %></p>
+      <div class="flex space-x-1">
+        <% for (let i = Math.max(1, page-3); i <= Math.min(pages, page+3); i++) { %>
+          <a href="?page=<%= i %>&search=<%= search %>"
+            class="w-8 h-8 flex items-center justify-center rounded-lg text-sm <%= i === page ? 'bg-teal-600 text-white' : 'hover:bg-gray-100 text-gray-600' %>">
+            <%= i %>
+          </a>
+        <% } %>
+      </div>
+    </div>
+  <% } %>
+</div>
+<%- include('layout_end') %>
+

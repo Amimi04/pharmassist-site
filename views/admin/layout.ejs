@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title || 'Admin - PharmaBot' %></title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>body { font-family: 'Inter', sans-serif; }</style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+<div class="flex h-screen overflow-hidden">
+  <!-- Sidebar -->
+  <aside class="w-64 bg-gray-900 text-white flex flex-col flex-shrink-0">
+    <div class="p-5 border-b border-gray-700">
+      <a href="/" class="flex items-center space-x-2">
+        <div class="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
+          <i class="fas fa-pills text-white text-sm"></i>
+        </div>
+        <span class="font-bold text-lg">PharmaBot <span class="text-red-400 text-xs">Admin</span></span>
+      </a>
+    </div>
+    <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
+      <a href="/admin" class="flex items-center space-x-3 px-3 py-2.5 rounded-xl text-sm hover:bg-gray-700 transition group
+        <%= title.includes('Dashboard') ? 'bg-blue-600 text-white' : 'text-gray-300' %>">
+        <i class="fas fa-tachometer-alt w-4 group-hover:text-blue-400"></i><span>Dashboard</span>
+      </a>
+      <div class="pt-3 pb-1">
+        <p class="text-xs text-gray-500 font-semibold uppercase tracking-wider px-3">Pharmaceutique</p>
+      </div>
+      <a href="/admin/medicines" class="flex items-center space-x-3 px-3 py-2.5 rounded-xl text-sm hover:bg-gray-700 transition text-gray-300">
+        <i class="fas fa-pills w-4"></i><span>Médicaments (MP)</span>
+      </a>
+      <a href="/admin/substances" class="flex items-center space-x-3 px-3 py-2.5 rounded-xl text-sm hover:bg-gray-700 transition text-gray-300">
+        <i class="fas fa-flask w-4"></i><span>Substances (INNM)</span>
+      </a>
+      <a href="/admin/galenic" class="flex items-center space-x-3 px-3 py-2.5 rounded-xl text-sm hover:bg-gray-700 transition text-gray-300">
+        <i class="fas fa-capsules w-4"></i><span>Formes galéniques</span>
+      </a>
+      <a href="/admin/indications" class="flex items-center space-x-3 px-3 py-2.5 rounded-xl text-sm hover:bg-gray-700 transition text-gray-300">
+        <i class="fas fa-stethoscope w-4"></i><span>Indications (IR)</span>
+      </a>
+      <div class="pt-3 pb-1">
+        <p class="text-xs text-gray-500 font-semibold uppercase tracking-wider px-3">Utilisateurs</p>
+      </div>
+      <a href="/admin/users" class="flex items-center space-x-3 px-3 py-2.5 rounded-xl text-sm hover:bg-gray-700 transition text-gray-300">
+        <i class="fas fa-users w-4"></i><span>Utilisateurs</span>
+      </a>
+      <a href="/admin/payments" class="flex items-center space-x-3 px-3 py-2.5 rounded-xl text-sm hover:bg-gray-700 transition text-gray-300">
+        <i class="fas fa-euro-sign w-4"></i><span>Paiements</span>
+      </a>
+      <a href="/admin/messages" class="flex items-center space-x-3 px-3 py-2.5 rounded-xl text-sm hover:bg-gray-700 transition text-gray-300">
+        <i class="fas fa-comments w-4"></i><span>Messages Chat</span>
+      </a>
+    </nav>
+    <div class="p-4 border-t border-gray-700">
+      <a href="/auth/logout" class="flex items-center space-x-3 px-3 py-2 rounded-xl text-sm text-gray-400 hover:text-red-400 hover:bg-gray-700 transition">
+        <i class="fas fa-sign-out-alt w-4"></i><span>Déconnexion</span>
+      </a>
+    </div>
+  </aside>
+  <!-- Main Content -->
+  <main class="flex-1 overflow-y-auto">
+    <header class="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between sticky top-0 z-10">
+      <h1 class="text-lg font-semibold text-gray-900"><%= title %></h1>
+      <div class="flex items-center space-x-3">
+        <a href="/chat" class="text-sm text-gray-500 hover:text-blue-600 transition">
+          <i class="fas fa-external-link-alt mr-1"></i>Voir le site
+        </a>
+        <div class="flex items-center space-x-2">
+          <div class="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center">
+            <i class="fas fa-user-shield text-white text-xs"></i>
+          </div>
+          <span class="text-sm font-medium text-gray-700"><%= user?.fullname || 'Admin' %></span>
+        </div>
+      </div>
+    </header>
+    <div class="p-6">
+

@@ -1,0 +1,104 @@
+<%- include('layout') %>
+<div class="flex items-center justify-between mb-6">
+  <div>
+    <h2 class="text-lg font-semibold text-gray-900">Gestion des utilisateurs</h2>
+    <p class="text-sm text-gray-500"><%= total %> utilisateur(s) au total</p>
+  </div>
+</div>
+
+<div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead class="bg-gray-50 border-b border-gray-200">
+        <tr class="text-xs text-gray-500 uppercase tracking-wider">
+          <th class="text-left px-5 py-3 font-medium">Utilisateur</th>
+          <th class="text-left px-5 py-3 font-medium">Profession</th>
+          <th class="text-left px-5 py-3 font-medium">Plan</th>
+          <th class="text-left px-5 py-3 font-medium">Rôle</th>
+          <th class="text-left px-5 py-3 font-medium">Inscription</th>
+          <th class="text-left px-5 py-3 font-medium">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100">
+        <% users.forEach(u => { %>
+          <tr class="hover:bg-gray-50">
+            <td class="px-5 py-4">
+              <div class="flex items-center space-x-3">
+                <div class="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
+                  <span class="text-white text-xs font-bold"><%= u.fullname.charAt(0).toUpperCase() %></span>
+                </div>
+                <div>
+                  <p class="font-medium text-gray-900"><%= u.fullname %></p>
+                  <p class="text-xs text-gray-400"><%= u.email %></p>
+                </div>
+              </div>
+            </td>
+            <td class="px-5 py-4 text-gray-600 capitalize"><%= u.profession || 'N/A' %></td>
+            <td class="px-5 py-4">
+              <span class="px-2 py-0.5 rounded-full text-xs font-medium
+                <%= u.plan === 'professionnel' ? 'bg-yellow-100 text-yellow-700' : u.plan === 'bienvenue' ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-500' %>">
+                <%= u.plan || 'gratuit' %>
+              </span>
+            </td>
+            <td class="px-5 py-4">
+              <span class="px-2 py-0.5 rounded-full text-xs font-medium
+                <%= u.role === 'admin' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700' %>">
+                <%= u.role %>
+              </span>
+            </td>
+            <td class="px-5 py-4 text-gray-400 text-xs"><%= new Date(u.created_at).toLocaleDateString('fr-BE') %></td>
+            <td class="px-5 py-4">
+              <div class="flex items-center space-x-2">
+                <select onchange="updateRole(<%= u.id %>, this.value)"
+                  class="text-xs border border-gray-200 rounded-lg px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white">
+                  <option value="user" <%= u.role === 'user' ? 'selected' : '' %>>User</option>
+                  <option value="admin" <%= u.role === 'admin' ? 'selected' : '' %>>Admin</option>
+                </select>
+                <button onclick="deleteUser(<%= u.id %>, '<%= u.fullname %>')"
+                  class="text-red-400 hover:text-red-600 transition">
+                  <i class="fas fa-trash text-xs"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+  <!-- Pagination -->
+  <% if (pages > 1) { %>
+    <div class="border-t border-gray-100 px-5 py-3 flex items-center justify-between">
+      <p class="text-sm text-gray-500">Page <%= page %> / <%= pages %></p>
+      <div class="flex space-x-1">
+        <% for (let i = 1; i <= pages; i++) { %>
+          <a href="?page=<%= i %>" 
+            class="w-8 h-8 flex items-center justify-center rounded-lg text-sm <%= i === page ? 'bg-blue-600 text-white' : 'hover:bg-gray-100 text-gray-600' %>">
+            <%= i %>
+          </a>
+        <% } %>
+      </div>
+    </div>
+  <% } %>
+</div>
+
+<script>
+async function updateRole(id, role) {
+  const res = await fetch(`/admin/users/${id}/role`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ role })
+  });
+  const data = await res.json();
+  if (!data.success) alert('Erreur: ' + data.error);
+}
+
+async function deleteUser(id, name) {
+  if (!confirm(`Supprimer l'utilisateur "${name}"?`)) return;
+  const res = await fetch(`/admin/users/${id}`, { method: 'DELETE' });
+  const data = await res.json();
+  if (data.success) location.reload();
+  else alert('Erreur: ' + data.error);
+}
+</script>
+<%- include('layout_end') %>
+

@@ -1,0 +1,128 @@
+<%- include('../layout/header') %>
+<div class="max-w-6xl mx-auto px-4 py-16">
+  <div class="text-center mb-14">
+    <h1 class="text-4xl font-bold text-gray-900 mb-4">Nos Abonnements</h1>
+    <p class="text-gray-500 text-lg max-w-2xl mx-auto">Choisissez le plan adapté à votre utilisation. Paiement sécurisé en EUR avec Stripe ou PayPal.</p>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+    <!-- Guest -->
+    <div class="border-2 border-gray-200 rounded-2xl p-7 bg-white text-center hover:border-gray-300 transition relative">
+      <div class="text-5xl mb-4">👤</div>
+      <h2 class="text-xl font-bold text-gray-900 mb-2">Invité</h2>
+      <div class="text-4xl font-bold text-gray-400 mb-1">Gratuit</div>
+      <div class="text-sm text-gray-400 mb-6">Sans inscription</div>
+      <hr class="border-gray-100 mb-6">
+      <ul class="text-sm text-gray-500 space-y-3 mb-8 text-left">
+        <li class="flex items-center space-x-2">
+          <i class="fas fa-check text-green-500 w-4"></i><span>2 questions par jour</span>
+        </li>
+        <li class="flex items-center space-x-2">
+          <i class="fas fa-check text-green-500 w-4"></i><span>Accès immédiat</span>
+        </li>
+        <li class="flex items-center space-x-2">
+          <i class="fas fa-times text-red-400 w-4"></i><span class="text-gray-400">Pas d'historique</span>
+        </li>
+        <li class="flex items-center space-x-2">
+          <i class="fas fa-times text-red-400 w-4"></i><span class="text-gray-400">Pas de compte</span>
+        </li>
+      </ul>
+      <a href="/chat" class="block w-full bg-gray-100 text-gray-700 font-semibold py-3 rounded-xl hover:bg-gray-200 transition text-sm">Essayer</a>
+    </div>
+
+    <!-- Free -->
+    <div class="border-2 border-blue-300 rounded-2xl p-7 bg-blue-50 text-center hover:border-blue-400 transition relative">
+      <div class="text-5xl mb-4">🆓</div>
+      <h2 class="text-xl font-bold text-gray-900 mb-2">Gratuit</h2>
+      <div class="text-4xl font-bold text-blue-600 mb-1">0 <span class="text-2xl">€</span></div>
+      <div class="text-sm text-gray-500 mb-6">À vie</div>
+      <hr class="border-blue-100 mb-6">
+      <ul class="text-sm text-gray-600 space-y-3 mb-8 text-left">
+        <li class="flex items-center space-x-2">
+          <i class="fas fa-check text-green-500 w-4"></i><span><strong>5 questions</strong> par jour</span>
+        </li>
+        <li class="flex items-center space-x-2">
+          <i class="fas fa-check text-green-500 w-4"></i><span>Historique conversations</span>
+        </li>
+        <li class="flex items-center space-x-2">
+          <i class="fas fa-check text-green-500 w-4"></i><span>Profil personnel</span>
+        </li>
+        <li class="flex items-center space-x-2">
+          <i class="fas fa-times text-red-400 w-4"></i><span class="text-gray-400">Recherches limitées</span>
+        </li>
+      </ul>
+      <% if (currentSub?.plan === 'gratuit') { %>
+        <div class="w-full bg-blue-200 text-blue-700 font-semibold py-3 rounded-xl text-sm text-center">Plan actuel ✓</div>
+      <% } else { %>
+        <a href="/auth/register" class="block w-full bg-blue-600 text-white font-semibold py-3 rounded-xl hover:bg-blue-700 transition text-sm">S'inscrire gratuitement</a>
+      <% } %>
+    </div>
+
+    <!-- Bienvenue -->
+    <div class="border-2 border-purple-400 rounded-2xl p-7 bg-white text-center hover:border-purple-500 transition relative shadow-lg">
+      <div class="absolute -top-4 left-1/2 -translate-x-1/2 bg-purple-600 text-white text-xs px-4 py-1.5 rounded-full font-bold">⭐ POPULAIRE</div>
+      <div class="text-5xl mb-4">⭐</div>
+      <h2 class="text-xl font-bold text-gray-900 mb-2">Bienvenue</h2>
+      <div class="text-4xl font-bold text-purple-600 mb-1">9,99 <span class="text-2xl">€</span></div>
+      <div class="text-sm text-gray-500 mb-6">par mois</div>
+      <hr class="border-gray-100 mb-6">
+      <ul class="text-sm text-gray-600 space-y-3 mb-8 text-left">
+        <li class="flex items-center space-x-2">
+          <i class="fas fa-check text-green-500 w-4"></i><span><strong>20 questions</strong> par jour</span>
+        </li>
+        <li class="flex items-center space-x-2">
+          <i class="fas fa-check text-green-500 w-4"></i><span>Historique complet</span>
+        </li>
+        <li class="flex items-center space-x-2">
+          <i class="fas fa-check text-green-500 w-4"></i><span>Recherche avancée</span>
+        </li>
+        <li class="flex items-center space-x-2">
+          <i class="fas fa-check text-green-500 w-4"></i><span>Support prioritaire</span>
+        </li>
+      </ul>
+      <% if (currentSub?.plan === 'bienvenue') { %>
+        <div class="w-full bg-purple-100 text-purple-700 font-semibold py-3 rounded-xl text-sm text-center">Plan actuel ✓</div>
+      <% } else { %>
+        <a href="/subscription/select/bienvenue" class="block w-full bg-purple-600 text-white font-semibold py-3 rounded-xl hover:bg-purple-700 transition text-sm">
+          <i class="fas fa-credit-card mr-2"></i>Choisir ce plan
+        </a>
+      <% } %>
+    </div>
+
+    <!-- Professional -->
+    <div class="border-2 border-yellow-400 rounded-2xl p-7 bg-white text-center hover:border-yellow-500 transition relative">
+      <div class="text-5xl mb-4">💼</div>
+      <h2 class="text-xl font-bold text-gray-900 mb-2">Professionnel</h2>
+      <div class="text-4xl font-bold text-yellow-600 mb-1">29,99 <span class="text-2xl">€</span></div>
+      <div class="text-sm text-gray-500 mb-6">par mois</div>
+      <hr class="border-gray-100 mb-6">
+      <ul class="text-sm text-gray-600 space-y-3 mb-8 text-left">
+        <li class="flex items-center space-x-2">
+          <i class="fas fa-check text-green-500 w-4"></i><span><strong>Questions illimitées</strong></span>
+        </li>
+        <li class="flex items-center space-x-2">
+          <i class="fas fa-check text-green-500 w-4"></i><span>Données cliniques complètes</span>
+        </li>
+        <li class="flex items-center space-x-2">
+          <i class="fas fa-check text-green-500 w-4"></i><span>Stupéfiants & Orphelins</span>
+        </li>
+        <li class="flex items-center space-x-2">
+          <i class="fas fa-check text-green-500 w-4"></i><span>Support dédié</span>
+        </li>
+      </ul>
+      <% if (currentSub?.plan === 'professionnel') { %>
+        <div class="w-full bg-yellow-100 text-yellow-700 font-semibold py-3 rounded-xl text-sm text-center">Plan actuel ✓</div>
+      <% } else { %>
+        <a href="/subscription/select/professionnel" class="block w-full bg-yellow-500 text-white font-semibold py-3 rounded-xl hover:bg-yellow-600 transition text-sm">
+          <i class="fas fa-credit-card mr-2"></i>Choisir ce plan
+        </a>
+      <% } %>
+    </div>
+  </div>
+
+  <div class="mt-12 text-center">
+    <p class="text-gray-400 text-sm"><i class="fab fa-cc-stripe mr-2 text-blue-500"></i>Stripe &nbsp;|&nbsp; <i class="fab fa-paypal mr-2 text-blue-600"></i>PayPal — Paiement 100% sécurisé en EUR</p>
+  </div>
+</div>
+<%- include('../layout/footer') %>
+

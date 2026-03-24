@@ -1,0 +1,196 @@
+<%- include('layout/header') %>
+
+<!-- Hero Section -->
+<section class="gradient-hero text-white">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-28">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+      <div>
+        <div class="inline-flex items-center space-x-2 bg-white/10 backdrop-blur px-4 py-2 rounded-full text-sm mb-6">
+          <span class="text-yellow-300">🇧🇪</span>
+          <span>Base de données officielle belge SAM/CSP</span>
+        </div>
+        <h1 class="text-4xl md:text-5xl font-bold leading-tight mb-6">
+          Votre Assistant<br>
+          <span class="text-yellow-300">Pharmaceutique</span><br>
+          Intelligent
+        </h1>
+        <p class="text-blue-100 text-lg mb-8 leading-relaxed">
+          Posez vos questions sur les médicaments belges en français. Accédez instantanément à 
+          <strong class="text-white"><%= pharmaStats.medicaments?.toLocaleString('fr-BE') || '+'%></strong> médicaments,
+          <strong class="text-white"><%= pharmaStats.substances?.toLocaleString('fr-BE') || '+' %></strong> substances actives
+          et <strong class="text-white"><%= pharmaStats.formes || '+' %></strong> formes galéniques.
+        </p>
+        <div class="flex flex-col sm:flex-row gap-4">
+          <a href="/chat" class="inline-flex items-center justify-center bg-white text-blue-700 font-semibold px-8 py-4 rounded-xl hover:bg-blue-50 transition shadow-lg text-lg">
+            <i class="fas fa-comment-dots mr-2"></i>Poser une question
+          </a>
+          <a href="/auth/register" class="inline-flex items-center justify-center border-2 border-white/50 text-white font-semibold px-8 py-4 rounded-xl hover:bg-white/10 transition text-lg">
+            <i class="fas fa-user-plus mr-2"></i>Inscription gratuite
+          </a>
+        </div>
+        <div class="flex items-center space-x-6 mt-8 text-sm text-blue-200">
+          <div class="flex items-center space-x-2">
+            <i class="fas fa-check-circle text-green-400"></i>
+            <span>Gratuit pour commencer</span>
+          </div>
+          <div class="flex items-center space-x-2">
+            <i class="fas fa-check-circle text-green-400"></i>
+            <span>Données officielles AFMPS</span>
+          </div>
+        </div>
+      </div>
+      <!-- Chat Demo Card -->
+      <div class="hidden lg:block">
+        <div class="glass rounded-2xl p-6 shadow-2xl">
+          <div class="flex items-center space-x-3 mb-4 pb-4 border-b border-white/20">
+            <div class="w-3 h-3 bg-red-400 rounded-full"></div>
+            <div class="w-3 h-3 bg-yellow-400 rounded-full"></div>
+            <div class="w-3 h-3 bg-green-400 rounded-full"></div>
+            <span class="text-white/70 text-sm ml-2">PharmaBot Assistant</span>
+          </div>
+          <div class="space-y-4">
+            <div class="flex justify-end">
+              <div class="bg-white/20 text-white rounded-2xl rounded-tr-sm px-4 py-3 max-w-xs text-sm">
+                Quels médicaments contiennent de l'ibuprofène?
+              </div>
+            </div>
+            <div class="flex items-start space-x-3">
+              <div class="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
+                <i class="fas fa-pills text-white text-xs"></i>
+              </div>
+              <div class="bg-white/10 text-white/90 rounded-2xl rounded-tl-sm px-4 py-3 text-sm max-w-xs">
+                <p class="font-medium mb-1">💊 Résultats trouvés:</p>
+                <p>• <strong>Brufen</strong> - 400mg, 600mg</p>
+                <p>• <strong>Ibuprofen EG</strong> - Générique</p>
+                <p>• <strong>Advil</strong> - 200mg, 400mg</p>
+                <p class="text-blue-300 mt-1">🏪 Disponible en officine</p>
+              </div>
+            </div>
+          </div>
+          <div class="mt-4 pt-4 border-t border-white/20">
+            <div class="bg-white/10 rounded-xl px-4 py-3 flex items-center space-x-3 text-white/50 text-sm">
+              <i class="fas fa-keyboard"></i>
+              <span>Posez votre question ici...</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Stats Section -->
+<section class="bg-white py-12 border-b border-gray-100">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+      <div class="p-6">
+        <div class="text-3xl font-bold text-blue-600 mb-1"><%= (pharmaStats.medicaments || 0).toLocaleString('fr-BE') %>+</div>
+        <div class="text-sm text-gray-500">Médicaments</div>
+      </div>
+      <div class="p-6">
+        <div class="text-3xl font-bold text-teal-600 mb-1"><%= (pharmaStats.substances || 0).toLocaleString('fr-BE') %>+</div>
+        <div class="text-sm text-gray-500">Substances actives</div>
+      </div>
+      <div class="p-6">
+        <div class="text-3xl font-bold text-purple-600 mb-1"><%= (pharmaStats.presentations || 0).toLocaleString('fr-BE') %>+</div>
+        <div class="text-sm text-gray-500">Présentations</div>
+      </div>
+      <div class="p-6">
+        <div class="text-3xl font-bold text-orange-600 mb-1"><%= pharmaStats.formes || 0 %>+</div>
+        <div class="text-sm text-gray-500">Formes galéniques</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Features Section -->
+<section class="py-20 bg-gray-50">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="text-center mb-16">
+      <h2 class="text-3xl font-bold text-gray-900 mb-4">Fonctionnalités avancées</h2>
+      <p class="text-gray-500 max-w-2xl mx-auto">Un moteur de recherche pharmaceutique complet basé sur la base officielle belge</p>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+      <div class="bg-white rounded-2xl p-8 shadow-sm hover:shadow-md transition">
+        <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mb-5">
+          <i class="fas fa-brain text-blue-600 text-xl"></i>
+        </div>
+        <h3 class="text-lg font-semibold text-gray-900 mb-3">IA Pharmaceutique</h3>
+        <p class="text-gray-500 text-sm leading-relaxed">Analyse sémantique de vos questions en français. Navigation intelligente dans la hiérarchie: substance → médicament → forme galénique → conditionnement.</p>
+      </div>
+      <div class="bg-white rounded-2xl p-8 shadow-sm hover:shadow-md transition">
+        <div class="w-12 h-12 bg-teal-100 rounded-xl flex items-center justify-center mb-5">
+          <i class="fas fa-database text-teal-600 text-xl"></i>
+        </div>
+        <h3 class="text-lg font-semibold text-gray-900 mb-3">Base SAM/CSP Officielle</h3>
+        <p class="text-gray-500 text-sm leading-relaxed">Données certifiées AFMPS/FAGG. Gestion des stupéfiants (narcotic), médicaments orphelins, biosimilaires, règles spéciales.</p>
+      </div>
+      <div class="bg-white rounded-2xl p-8 shadow-sm hover:shadow-md transition">
+        <div class="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center mb-5">
+          <i class="fas fa-shield-alt text-purple-600 text-xl"></i>
+        </div>
+        <h3 class="text-lg font-semibold text-gray-900 mb-3">Sécurité & Confidentialité</h3>
+        <p class="text-gray-500 text-sm leading-relaxed">Protection CSRF, sessions sécurisées, Helmet.js. Vos questions médicales restent confidentielles.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Subscription Plans Preview -->
+<section class="py-20 bg-white">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="text-center mb-12">
+      <h2 class="text-3xl font-bold text-gray-900 mb-4">Choisissez votre plan</h2>
+      <p class="text-gray-500">Commencez gratuitement, évoluez selon vos besoins</p>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <!-- Guest -->
+      <div class="border border-gray-200 rounded-2xl p-6 text-center hover:border-gray-300 transition">
+        <div class="text-gray-400 text-3xl mb-3">👤</div>
+        <h3 class="font-bold text-gray-900 mb-1">Invité</h3>
+        <div class="text-2xl font-bold text-gray-400 mb-1">Gratuit</div>
+        <div class="text-sm text-gray-400 mb-4">2 questions/jour</div>
+        <a href="/chat" class="block w-full bg-gray-100 text-gray-600 py-2 rounded-lg text-sm hover:bg-gray-200 transition">Essayer</a>
+      </div>
+      <!-- Free -->
+      <div class="border border-blue-200 bg-blue-50 rounded-2xl p-6 text-center">
+        <div class="text-3xl mb-3">🆓</div>
+        <h3 class="font-bold text-gray-900 mb-1">Gratuit</h3>
+        <div class="text-2xl font-bold text-blue-600 mb-1">0 €</div>
+        <div class="text-sm text-gray-500 mb-4">5 questions/jour</div>
+        <a href="/auth/register" class="block w-full bg-blue-600 text-white py-2 rounded-lg text-sm hover:bg-blue-700 transition">S'inscrire</a>
+      </div>
+      <!-- Bienvenue -->
+      <div class="border border-purple-200 rounded-2xl p-6 text-center hover:border-purple-300 transition relative">
+        <div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-purple-600 text-white text-xs px-3 py-1 rounded-full">Populaire</div>
+        <div class="text-3xl mb-3">⭐</div>
+        <h3 class="font-bold text-gray-900 mb-1">Bienvenue</h3>
+        <div class="text-2xl font-bold text-purple-600 mb-1">9,99 €<span class="text-sm font-normal text-gray-400">/mois</span></div>
+        <div class="text-sm text-gray-500 mb-4">20 questions/jour</div>
+        <a href="/subscription/plans" class="block w-full bg-purple-600 text-white py-2 rounded-lg text-sm hover:bg-purple-700 transition">Choisir</a>
+      </div>
+      <!-- Professional -->
+      <div class="border border-yellow-200 rounded-2xl p-6 text-center hover:border-yellow-300 transition">
+        <div class="text-3xl mb-3">💼</div>
+        <h3 class="font-bold text-gray-900 mb-1">Professionnel</h3>
+        <div class="text-2xl font-bold text-yellow-600 mb-1">29,99 €<span class="text-sm font-normal text-gray-400">/mois</span></div>
+        <div class="text-sm text-gray-500 mb-4">Questions illimitées</div>
+        <a href="/subscription/plans" class="block w-full bg-yellow-500 text-white py-2 rounded-lg text-sm hover:bg-yellow-600 transition">Choisir</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA Section -->
+<section class="gradient-hero py-16">
+  <div class="max-w-3xl mx-auto px-4 text-center text-white">
+    <h2 class="text-3xl font-bold mb-4">Prêt à poser votre première question?</h2>
+    <p class="text-blue-200 mb-8">Accès immédiat, sans inscription pour les 2 premières questions.</p>
+    <a href="/chat" class="inline-flex items-center bg-white text-blue-700 font-bold px-10 py-4 rounded-xl hover:bg-blue-50 transition shadow-lg text-lg">
+      <i class="fas fa-comment-dots mr-3"></i>Démarrer maintenant
+    </a>
+  </div>
+</section>
+
+<%- include('layout/footer') %>
+

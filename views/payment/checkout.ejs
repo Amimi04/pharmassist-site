@@ -1,0 +1,172 @@
+<%- include('../layout/header') %>
+<script src="https://js.stripe.com/v3/"></script>
+<div class="max-w-2xl mx-auto px-4 py-16">
+  <div class="text-center mb-10">
+    <h1 class="text-3xl font-bold text-gray-900">Finaliser votre abonnement</h1>
+    <p class="text-gray-500 mt-2">Plan <strong class="text-blue-600 capitalize"><%= planData.label %></strong> — <strong><%= planData.price.toFixed(2).replace('.', ',') %> € / mois</strong></p>
+  </div>
+
+  <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+    <!-- Order Summary -->
+    <div class="p-6 bg-gray-50 border-b border-gray-200">
+      <h2 class="font-semibold text-gray-900 mb-4">Récapitulatif de commande</h2>
+      <div class="flex justify-between items-center">
+        <div>
+          <p class="font-medium text-gray-800">PharmaBot - Plan <%= planData.label %></p>
+          <p class="text-sm text-gray-500">Abonnement mensuel, questions
+            <%= planData.daily_limit === -1 ? 'illimitées' : planData.daily_limit + '/jour' %></p>
+        </div>
+        <p class="text-2xl font-bold text-gray-900"><%= planData.price.toFixed(2).replace('.', ',') %> €</p>
+      </div>
+    </div>
+
+    <div class="p-6">
+      <!-- Payment Method Toggle -->
+      <div class="flex space-x-3 mb-6">
+        <button id="btnStripe" onclick="showPayment('stripe')"
+          class="flex-1 border-2 border-blue-500 bg-blue-50 text-blue-700 py-3 rounded-xl font-medium text-sm transition">
+          <i class="fab fa-cc-stripe mr-2 text-xl"></i>Carte bancaire
+        </button>
+        <button id="btnPaypal" onclick="showPayment('paypal')"
+          class="flex-1 border-2 border-gray-200 text-gray-600 py-3 rounded-xl font-medium text-sm hover:border-blue-300 transition">
+          <i class="fab fa-paypal mr-2 text-xl text-blue-600"></i>PayPal
+        </button>
+      </div>
+
+      <!-- Stripe Form -->
+      <div id="stripeSection">
+        <div id="stripe-error" class="hidden mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm"></div>
+        <div id="card-element" class="border border-gray-300 rounded-xl px-4 py-4 mb-4 bg-gray-50"></div>
+        <button id="stripePayBtn" onclick="payWithStripe()"
+          class="w-full bg-blue-600 text-white font-bold py-4 rounded-xl hover:bg-blue-700 transition text-sm disabled:opacity-50">
+          <i class="fas fa-lock mr-2"></i>Payer <%= planData.price.toFixed(2).replace('.', ',') %> € par carte
+        </button>
+        <p class="text-xs text-gray-400 text-center mt-2"><i class="fas fa-shield-alt mr-1 text-green-500"></i>Paiement sécurisé via Stripe — Données chiffrées</p>
+      </div>
+
+      <!-- PayPal Section -->
+      <div id="paypalSection" class="hidden">
+        <div id="paypal-button-container"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mt-6 flex items-center justify-center space-x-6 text-xs text-gray-400">
+    <span><i class="fas fa-shield-alt text-green-500 mr-1"></i>SSL Sécurisé</span>
+    <span><i class="fas fa-undo text-blue-500 mr-1"></i>Annulable</span>
+    <span><i class="fas fa-euro-sign text-gray-400 mr-1"></i>EUR</span>
+  </div>
+</div>
+
+<script>
+const plan = '<%= plan %>';
+const amount = <%= planData.price %>;
+
+// Stripe
+const stripe = Stripe('<%= stripePublicKey %>');
+const elements = stripe.elements();
+const cardElement = elements.create('card', {
+  style: { base: { fontSize: '16px', color: '#374151', '::placeholder': { color: '#9ca3af' } } }
+});
+cardElement.mount('#card-element');
+
+cardElement.on('change', function(event) {
+  const errDiv = document.getElementById('stripe-error');
+  if (event.error) {
+    errDiv.textContent = event.error.message;
+    errDiv.classList.remove('hidden');
+  } else {
+    errDiv.classList.add('hidden');
+  }
+});
+
+async function payWithStripe() {
+  const btn = document.getElementById('stripePayBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Traitement...';
+
+  try {
+    const intentRes = await fetch('/payment/stripe/intent', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ plan })
+    });
+    const intentData = await intentRes.json();
+    if (intentData.error) throw new Error(intentData.error);
+
+    const { paymentIntent, error } = await stripe.confirmCardPayment(intentData.clientSecret, {
+      payment_method: { card: cardElement }
+    });
+
+    if (error) throw new Error(error.message);
+
+    if (paymentIntent.status === 'succeeded') {
+      const confirmRes = await fetch('/payment/stripe/confirm', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ paymentIntentId: paymentIntent.id, plan })
+      });
+      const confirmData = await confirmRes.json();
+      if (confirmData.success) {
+        window.location.href = '/payment/success';
+      } else {
+        throw new Error(confirmData.error || 'Erreur de confirmation');
+      }
+    }
+  } catch (err) {
+    const errDiv = document.getElementById('stripe-error');
+    errDiv.textContent = '❌ ' + err.message;
+    errDiv.classList.remove('hidden');
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-lock mr-2"></i>Payer <%= planData.price.toFixed(2).replace(".", ",") %> € par carte';
+  }
+}
+
+function showPayment(method) {
+  document.getElementById('stripeSection').classList.toggle('hidden', method !== 'stripe');
+  document.getElementById('paypalSection').classList.toggle('hidden', method !== 'paypal');
+  document.getElementById('btnStripe').className = 'flex-1 border-2 py-3 rounded-xl font-medium text-sm transition ' + 
+    (method === 'stripe' ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-200 text-gray-600 hover:border-blue-300');
+  document.getElementById('btnPaypal').className = 'flex-1 border-2 py-3 rounded-xl font-medium text-sm transition ' + 
+    (method === 'paypal' ? 'border-blue-500 bg-blue-50 text-blue-700' : 'border-gray-200 text-gray-600 hover:border-blue-300');
+
+  if (method === 'paypal' && !window.paypalLoaded) {
+    window.paypalLoaded = true;
+    const script = document.createElement('script');
+    script.src = 'https://www.paypal.com/sdk/js?client-id=<%= paypalClientId %>&currency=EUR';
+    script.onload = initPayPal;
+    document.head.appendChild(script);
+  }
+}
+
+function initPayPal() {
+  paypal.Buttons({
+    createOrder: async () => {
+      const res = await fetch('/payment/paypal/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plan })
+      });
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      return data.orderId;
+    },
+    onApprove: async (data) => {
+      const res = await fetch('/payment/paypal/capture', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId: data.orderID, plan })
+      });
+      const result = await res.json();
+      if (result.success) {
+        window.location.href = '/payment/success';
+      } else {
+        alert('Erreur PayPal: ' + (result.error || 'Inconnu'));
+      }
+    },
+    onError: (err) => alert('Erreur PayPal: ' + err)
+  }).render('#paypal-button-container');
+}
+</script>
+<%- include('../layout/footer') %>
+

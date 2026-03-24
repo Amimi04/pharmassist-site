@@ -1,0 +1,39 @@
+<%- include('layout') %>
+<div class="mb-6">
+  <h2 class="text-lg font-semibold text-gray-900">Formes galéniques (GAL)</h2>
+  <p class="text-sm text-gray-500"><%= forms.length %> forme(s) galénique(s) répertoriée(s)</p>
+</div>
+<div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead class="bg-gray-50 border-b border-gray-200">
+        <tr class="text-xs text-gray-500 uppercase tracking-wider">
+          <th class="text-left px-5 py-3 font-medium">Code</th>
+          <th class="text-left px-5 py-3 font-medium">Nom français</th>
+          <th class="text-left px-5 py-3 font-medium">Nom néerlandais</th>
+          <th class="text-center px-5 py-3 font-medium">Officine</th>
+          <th class="text-center px-5 py-3 font-medium">Hospitalier</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100">
+        <% forms.forEach(f => { %>
+          <tr class="hover:bg-gray-50">
+            <td class="px-5 py-3"><code class="text-xs bg-gray-100 px-2 py-0.5 rounded text-gray-600"><%= f.galcv %></code></td>
+            <td class="px-5 py-3 text-gray-900"><%= f.fgalnm %></td>
+            <td class="px-5 py-3 text-gray-500"><%= f.ngalnm %></td>
+            <td class="px-5 py-3 text-center">
+              <% if (f.amb) { %><span class="text-green-500"><i class="fas fa-check-circle"></i></span>
+              <% } else { %><span class="text-gray-300"><i class="fas fa-times-circle"></i></span><% } %>
+            </td>
+            <td class="px-5 py-3 text-center">
+              <% if (f.hosp) { %><span class="text-green-500"><i class="fas fa-check-circle"></i></span>
+              <% } else { %><span class="text-gray-300"><i class="fas fa-times-circle"></i></span><% } %>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+</div>
+<%- include('layout_end') %>
+

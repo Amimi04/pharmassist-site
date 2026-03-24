@@ -1,0 +1,155 @@
+<%- include('layout') %>
+
+<!-- Stats Grid -->
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+  <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-200">
+    <div class="flex items-center justify-between mb-3">
+      <div class="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
+        <i class="fas fa-users text-blue-600"></i>
+      </div>
+      <span class="text-xs text-green-500 font-medium bg-green-50 px-2 py-0.5 rounded-full">Total</span>
+    </div>
+    <div class="text-2xl font-bold text-gray-900"><%= stats.users.toLocaleString('fr-BE') %></div>
+    <div class="text-sm text-gray-500">Utilisateurs</div>
+  </div>
+  <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-200">
+    <div class="flex items-center justify-between mb-3">
+      <div class="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center">
+        <i class="fas fa-euro-sign text-green-600"></i>
+      </div>
+    </div>
+    <div class="text-2xl font-bold text-gray-900"><%= (parseFloat(stats.revenue) || 0).toFixed(2) %> €</div>
+    <div class="text-sm text-gray-500">Revenus totaux</div>
+  </div>
+  <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-200">
+    <div class="flex items-center justify-between mb-3">
+      <div class="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center">
+        <i class="fas fa-comments text-purple-600"></i>
+      </div>
+    </div>
+    <div class="text-2xl font-bold text-gray-900"><%= stats.messages.toLocaleString('fr-BE') %></div>
+    <div class="text-sm text-gray-500">Messages chatbot</div>
+  </div>
+  <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-200">
+    <div class="flex items-center justify-between mb-3">
+      <div class="w-10 h-10 bg-teal-100 rounded-xl flex items-center justify-center">
+        <i class="fas fa-pills text-teal-600"></i>
+      </div>
+    </div>
+    <div class="text-2xl font-bold text-gray-900"><%= (stats.pharma.medicaments || 0).toLocaleString('fr-BE') %></div>
+    <div class="text-sm text-gray-500">Médicaments (MP)</div>
+  </div>
+</div>
+
+<!-- Pharma Stats Row -->
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+  <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl p-4 text-white shadow">
+    <div class="text-2xl font-bold"><%= (stats.pharma.presentations || 0).toLocaleString('fr-BE') %></div>
+    <div class="text-blue-100 text-sm">Présentations (MPP)</div>
+  </div>
+  <div class="bg-gradient-to-br from-teal-500 to-teal-600 rounded-2xl p-4 text-white shadow">
+    <div class="text-2xl font-bold"><%= (stats.pharma.substances || 0).toLocaleString('fr-BE') %></div>
+    <div class="text-teal-100 text-sm">Substances (INNM)</div>
+  </div>
+  <div class="bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl p-4 text-white shadow">
+    <div class="text-2xl font-bold"><%= stats.pharma.formes || 0 %></div>
+    <div class="text-purple-100 text-sm">Formes galéniques</div>
+  </div>
+  <div class="bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl p-4 text-white shadow">
+    <div class="text-2xl font-bold"><%= stats.payments %></div>
+    <div class="text-orange-100 text-sm">Paiements complétés</div>
+  </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+  <!-- Subscriptions -->
+  <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-5">
+    <h2 class="font-semibold text-gray-900 mb-4"><i class="fas fa-crown mr-2 text-yellow-500"></i>Répartition abonnements</h2>
+    <div class="space-y-3">
+      <% stats.subscriptions.forEach(sub => { %>
+        <div class="flex items-center justify-between">
+          <span class="capitalize text-sm text-gray-600"><%= sub.plan %></span>
+          <div class="flex items-center space-x-2">
+            <div class="w-32 bg-gray-100 rounded-full h-2">
+              <div class="bg-blue-500 rounded-full h-2" style="width: <%= Math.min(100, (sub.count / Math.max(1, stats.users)) * 100) %>%"></div>
+            </div>
+            <span class="text-sm font-bold text-gray-900 w-6 text-right"><%= sub.count %></span>
+          </div>
+        </div>
+      <% }) %>
+    </div>
+  </div>
+
+  <!-- Recent Users -->
+  <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-5">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="font-semibold text-gray-900"><i class="fas fa-user-plus mr-2 text-blue-500"></i>Nouveaux utilisateurs</h2>
+      <a href="/admin/users" class="text-xs text-blue-600 hover:underline">Voir tous →</a>
+    </div>
+    <div class="space-y-3">
+      <% recentUsers.forEach(u => { %>
+        <div class="flex items-center space-x-3">
+          <div class="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
+            <span class="text-white text-xs font-bold"><%= u.fullname.charAt(0).toUpperCase() %></span>
+          </div>
+          <div class="flex-1 min-w-0">
+            <p class="text-sm font-medium text-gray-900 truncate"><%= u.fullname %></p>
+            <p class="text-xs text-gray-400 truncate"><%= u.email %></p>
+          </div>
+          <span class="text-xs px-2 py-0.5 rounded-full capitalize
+            <%= u.plan === 'professionnel' ? 'bg-yellow-100 text-yellow-700' : u.plan === 'bienvenue' ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-500' %>">
+            <%= u.plan || 'gratuit' %>
+          </span>
+        </div>
+      <% }) %>
+    </div>
+  </div>
+
+  <!-- Recent Payments -->
+  <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-5 lg:col-span-2">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="font-semibold text-gray-900"><i class="fas fa-credit-card mr-2 text-green-500"></i>Paiements récents</h2>
+      <a href="/admin/payments" class="text-xs text-blue-600 hover:underline">Voir tous →</a>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="text-xs text-gray-400 uppercase border-b border-gray-100">
+            <th class="text-left pb-3 font-medium">Utilisateur</th>
+            <th class="text-left pb-3 font-medium">Plan</th>
+            <th class="text-left pb-3 font-medium">Méthode</th>
+            <th class="text-left pb-3 font-medium">Montant</th>
+            <th class="text-left pb-3 font-medium">Statut</th>
+            <th class="text-left pb-3 font-medium">Date</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-50">
+          <% recentPayments.forEach(p => { %>
+            <tr>
+              <td class="py-3 font-medium text-gray-900"><%= p.fullname || 'N/A' %></td>
+              <td class="py-3 capitalize text-gray-600"><%= p.plan %></td>
+              <td class="py-3"><span class="flex items-center space-x-1">
+                <i class="<%= p.payment_method === 'stripe' ? 'fab fa-cc-stripe text-blue-500' : 'fab fa-paypal text-blue-600' %>"></i>
+                <span class="capitalize"><%= p.payment_method %></span>
+              </span></td>
+              <td class="py-3 font-bold text-gray-900"><%= parseFloat(p.amount).toFixed(2) %> €</td>
+              <td class="py-3">
+                <span class="px-2 py-0.5 rounded-full text-xs font-medium
+                  <%= p.status === 'completed' ? 'bg-green-100 text-green-700' : p.status === 'pending' ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700' %>">
+                  <%= p.status %>
+                </span>
+              </td>
+              <td class="py-3 text-gray-400 text-xs"><%= new Date(p.created_at).toLocaleDateString('fr-BE') %></td>
+            </tr>
+          <% }) %>
+          <% if (recentPayments.length === 0) { %>
+            <tr><td colspan="6" class="py-6 text-center text-gray-400">Aucun paiement</td></tr>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<%- include('layout_end') %>
+

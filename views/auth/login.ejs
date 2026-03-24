@@ -1,0 +1,71 @@
+<%- include('../layout/header') %>
+<div class="min-h-screen flex items-center justify-center py-12 px-4 bg-gray-50">
+  <div class="w-full max-w-md">
+    <div class="text-center mb-8">
+      <div class="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-2xl mb-4 shadow-lg">
+        <i class="fas fa-sign-in-alt text-white text-2xl"></i>
+      </div>
+      <h1 class="text-2xl font-bold text-gray-900">Se connecter</h1>
+      <p class="text-gray-500 mt-1 text-sm">Accédez à votre assistant pharmaceutique</p>
+    </div>
+
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
+      <% if (errors && errors.length > 0) { %>
+        <div class="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
+          <% errors.forEach(err => { %>
+            <p class="text-red-700 text-sm"><i class="fas fa-exclamation-circle mr-2"></i><%= err.msg %></p>
+          <% }) %>
+        </div>
+      <% } %>
+
+      <form method="POST" action="/auth/login">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        
+        <div class="mb-5">
+          <label class="block text-sm font-medium text-gray-700 mb-1.5">Email</label>
+          <input type="email" name="email" value="<%= values.email || '' %>" required autofocus
+            class="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-gray-400"
+            placeholder="votre@email.be">
+        </div>
+
+        <div class="mb-6">
+          <div class="flex justify-between mb-1.5">
+            <label class="text-sm font-medium text-gray-700">Mot de passe</label>
+          </div>
+          <div class="relative">
+            <input type="password" name="password" id="password" required
+              class="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-gray-400 pr-11"
+              placeholder="Votre mot de passe">
+            <button type="button" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600" onclick="togglePwd()">
+              <i class="fas fa-eye" id="pwdIcon"></i>
+            </button>
+          </div>
+        </div>
+
+        <button type="submit"
+          class="w-full bg-blue-600 text-white font-semibold py-3 rounded-xl hover:bg-blue-700 transition shadow-sm text-sm">
+          <i class="fas fa-sign-in-alt mr-2"></i>Se connecter
+        </button>
+      </form>
+
+      <p class="text-center text-sm text-gray-500 mt-6">
+        Pas encore de compte? 
+        <a href="/auth/register" class="text-blue-600 hover:underline font-medium">Créer un compte gratuit</a>
+      </p>
+    </div>
+
+    <div class="mt-4 text-center text-xs text-gray-400">
+      <p>Admin: <code class="bg-gray-100 px-2 py-0.5 rounded">admin@pharmabot.be</code></p>
+    </div>
+  </div>
+</div>
+<script>
+function togglePwd() {
+  const input = document.getElementById('password');
+  const icon = document.getElementById('pwdIcon');
+  input.type = input.type === 'password' ? 'text' : 'password';
+  icon.className = input.type === 'password' ? 'fas fa-eye' : 'fas fa-eye-slash';
+}
+</script>
+<%- include('../layout/footer') %>
+

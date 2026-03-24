@@ -1,0 +1,91 @@
+<%- include('../layout/header') %>
+<div class="min-h-screen flex items-center justify-center py-12 px-4 bg-gray-50">
+  <div class="w-full max-w-md">
+    <div class="text-center mb-8">
+      <div class="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-2xl mb-4 shadow-lg">
+        <i class="fas fa-user-plus text-white text-2xl"></i>
+      </div>
+      <h1 class="text-2xl font-bold text-gray-900">Créer un compte</h1>
+      <p class="text-gray-500 mt-1 text-sm">5 questions/jour gratuitement</p>
+    </div>
+
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
+      <% if (errors && errors.length > 0) { %>
+        <div class="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
+          <% errors.forEach(err => { %>
+            <p class="text-red-700 text-sm"><i class="fas fa-exclamation-circle mr-2"></i><%= err.msg %></p>
+          <% }) %>
+        </div>
+      <% } %>
+
+      <form method="POST" action="/auth/register">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        
+        <div class="mb-5">
+          <label class="block text-sm font-medium text-gray-700 mb-1.5">Nom complet <span class="text-red-500">*</span></label>
+          <input type="text" name="fullname" value="<%= values.fullname || '' %>" required
+            class="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-gray-400"
+            placeholder="Dr. Jean Dupont">
+        </div>
+
+        <div class="mb-5">
+          <label class="block text-sm font-medium text-gray-700 mb-1.5">Profession <span class="text-red-500">*</span></label>
+          <select name="profession" required
+            class="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-700">
+            <option value="">Sélectionner...</option>
+            <option value="medecin" <%= values.profession === 'medecin' ? 'selected' : '' %>>👨‍⚕️ Médecin</option>
+            <option value="veterinaire" <%= values.profession === 'veterinaire' ? 'selected' : '' %>>🐾 Vétérinaire</option>
+            <option value="pharmacien" <%= values.profession === 'pharmacien' ? 'selected' : '' %>>💊 Pharmacien</option>
+            <option value="autre" <%= values.profession === 'autre' ? 'selected' : '' %>>👤 Autre</option>
+          </select>
+        </div>
+
+        <div class="mb-5">
+          <label class="block text-sm font-medium text-gray-700 mb-1.5">Email <span class="text-red-500">*</span></label>
+          <input type="email" name="email" value="<%= values.email || '' %>" required
+            class="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-gray-400"
+            placeholder="nom@example.be">
+        </div>
+
+        <div class="mb-6">
+          <label class="block text-sm font-medium text-gray-700 mb-1.5">Mot de passe <span class="text-red-500">*</span></label>
+          <div class="relative">
+            <input type="password" name="password" id="password" required
+              class="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent placeholder-gray-400 pr-11"
+              placeholder="Min. 6 caractères avec chiffre">
+            <button type="button" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600" onclick="togglePwd()">
+              <i class="fas fa-eye" id="pwdIcon"></i>
+            </button>
+          </div>
+          <p class="text-xs text-gray-400 mt-1">Minimum 6 caractères, doit contenir un chiffre</p>
+        </div>
+
+        <button type="submit"
+          class="w-full bg-blue-600 text-white font-semibold py-3 rounded-xl hover:bg-blue-700 transition shadow-sm text-sm">
+          <i class="fas fa-user-plus mr-2"></i>Créer mon compte gratuitement
+        </button>
+      </form>
+
+      <p class="text-center text-sm text-gray-500 mt-6">
+        Déjà inscrit? 
+        <a href="/auth/login" class="text-blue-600 hover:underline font-medium">Se connecter</a>
+      </p>
+    </div>
+
+    <div class="mt-6 flex items-center justify-center space-x-4 text-xs text-gray-400">
+      <div class="flex items-center space-x-1"><i class="fas fa-shield-alt text-green-500"></i><span>Sécurisé HTTPS</span></div>
+      <div class="flex items-center space-x-1"><i class="fas fa-lock text-green-500"></i><span>RGPD conforme</span></div>
+      <div class="flex items-center space-x-1"><i class="fas fa-check text-green-500"></i><span>Sans CB</span></div>
+    </div>
+  </div>
+</div>
+<script>
+function togglePwd() {
+  const input = document.getElementById('password');
+  const icon = document.getElementById('pwdIcon');
+  input.type = input.type === 'password' ? 'text' : 'password';
+  icon.className = input.type === 'password' ? 'fas fa-eye' : 'fas fa-eye-slash';
+}
+</script>
+<%- include('../layout/footer') %>
+

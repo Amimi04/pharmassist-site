@@ -1,0 +1,32 @@
+# Dependencies
+node_modules/
+
+# Environment variables — contains DB credentials, API keys, secrets
+
+.env.local
+.env.*.local
+
+# Log files
+*.log
+start.log
+start_err.log
+logs/
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor directories
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# Runtime / temp
+tmp/
+temp/
+.tmp/
+

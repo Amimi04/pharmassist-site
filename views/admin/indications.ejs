@@ -1,0 +1,52 @@
+<%- include('layout') %>
+<div class="mb-6">
+  <h2 class="text-lg font-semibold text-gray-900">Indications thérapeutiques (IR)</h2>
+  <p class="text-sm text-gray-500"><%= total.toLocaleString('fr-BE') %> indication(s)</p>
+</div>
+<div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead class="bg-gray-50 border-b border-gray-200">
+        <tr class="text-xs text-gray-500 uppercase tracking-wider">
+          <th class="text-left px-5 py-3 font-medium">Code</th>
+          <th class="text-left px-5 py-3 font-medium">Indication FR</th>
+          <th class="text-left px-5 py-3 font-medium">Indication NL</th>
+          <th class="text-center px-5 py-3 font-medium">PIP</th>
+          <th class="text-center px-5 py-3 font-medium">Dispo.</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100">
+        <% indications.forEach(ir => { %>
+          <tr class="hover:bg-gray-50">
+            <td class="px-5 py-3"><code class="text-xs bg-gray-100 px-2 py-0.5 rounded text-gray-600"><%= ir.ircv %></code></td>
+            <td class="px-5 py-3 text-gray-900 max-w-xs"><div class="truncate"><%= ir.firnm %></div></td>
+            <td class="px-5 py-3 text-gray-500 max-w-xs"><div class="truncate text-xs"><%= ir.nirnm %></div></td>
+            <td class="px-5 py-3 text-center text-xs">
+              <% if (ir.pip) { %><span class="bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">PIP</span><% } else { %><span class="text-gray-300">—</span><% } %>
+            </td>
+            <td class="px-5 py-3 text-center text-xs">
+              <% if (ir.amb && ir.hosp) { %><span class="text-green-600">Amb+Hosp</span>
+              <% } else if (ir.amb) { %><span class="text-blue-600">Officine</span>
+              <% } else if (ir.hosp) { %><span class="text-orange-600">Hosp.</span>
+              <% } else { %><span class="text-gray-400">—</span><% } %>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+  <% if (pages > 1) { %>
+    <div class="border-t border-gray-100 px-5 py-3 flex items-center justify-between">
+      <p class="text-sm text-gray-500">Page <%= page %> / <%= pages %></p>
+      <div class="flex space-x-1">
+        <% for (let i = Math.max(1, page-4); i <= Math.min(pages, page+4); i++) { %>
+          <a href="?page=<%= i %>" class="w-8 h-8 flex items-center justify-center rounded-lg text-sm <%= i === page ? 'bg-blue-600 text-white' : 'hover:bg-gray-100 text-gray-600' %>">
+            <%= i %>
+          </a>
+        <% } %>
+      </div>
+    </div>
+  <% } %>
+</div>
+<%- include('layout_end') %>
+

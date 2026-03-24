@@ -1,0 +1,268 @@
+<%- include('../layout/header') %>
+
+<div class="max-w-5xl mx-auto px-4 py-6">
+  <!-- Header Bar -->
+  <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-4 mb-4 flex items-center justify-between">
+    <div class="flex items-center space-x-3">
+      <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center">
+        <i class="fas fa-pills text-white"></i>
+      </div>
+      <div>
+        <h1 class="font-bold text-gray-900">PharmaBot Assistant</h1>
+        <p class="text-xs text-gray-500">Base de données pharmaceutique belge officielle 🇧🇪</p>
+      </div>
+    </div>
+    <div class="flex items-center space-x-3">
+      <% if (limitInfo) { %>
+        <% if (limitInfo.dailyLimit === -1) { %>
+          <span class="text-xs bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full font-medium">
+            <i class="fas fa-infinity mr-1"></i>Illimité
+          </span>
+        <% } else { %>
+          <span class="text-xs px-3 py-1 rounded-full font-medium <%= limitInfo.remaining <= 1 ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700' %>">
+            <i class="fas fa-question-circle mr-1"></i><%= limitInfo.remaining %> / <%= limitInfo.dailyLimit %> restantes
+          </span>
+        <% } %>
+      <% } %>
+      <% if (user) { %>
+        <a href="/chat/history" class="text-xs text-gray-500 hover:text-blue-600 transition">
+          <i class="fas fa-history mr-1"></i><span class="hidden md:inline">Historique</span>
+        </a>
+      <% } %>
+    </div>
+  </div>
+
+  <!-- Chat Container -->
+  <div class="bg-white rounded-2xl shadow-sm border border-gray-200 flex flex-col" style="height: calc(100vh - 280px); min-height: 400px;">
+    <!-- Messages -->
+    <div class="flex-1 overflow-y-auto p-6 space-y-4" id="chatMessages">
+      <!-- Welcome message -->
+      <div class="flex items-start space-x-3">
+        <div class="w-9 h-9 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
+          <i class="fas fa-pills text-white text-sm"></i>
+        </div>
+        <div class="chat-bubble-bot rounded-2xl rounded-tl-sm px-5 py-4 max-w-2xl shadow-sm">
+          <p class="font-semibold text-gray-800 mb-2">👋 Bonjour! Je suis PharmaBot 🇧🇪</p>
+          <p class="text-gray-600 text-sm mb-3">Je suis votre assistant pharmaceutique belge. Posez-moi vos questions sur les médicaments en français.</p>
+          <p class="text-gray-500 text-xs mb-2 font-medium">Exemples de questions:</p>
+          <div class="space-y-1">
+            <button class="quick-question block w-full text-left text-xs bg-blue-50 hover:bg-blue-100 text-blue-700 px-3 py-2 rounded-lg transition">
+              💊 Quels médicaments contiennent de l'ibuprofène?
+            </button>
+            <button class="quick-question block w-full text-left text-xs bg-blue-50 hover:bg-blue-100 text-blue-700 px-3 py-2 rounded-lg transition">
+              🔬 Qu'est-ce que le paracétamol?
+            </button>
+            <button class="quick-question block w-full text-left text-xs bg-blue-50 hover:bg-blue-100 text-blue-700 px-3 py-2 rounded-lg transition">
+              ⚠️ Liste des stupéfiants disponibles en Belgique
+            </button>
+          </div>
+          <% if (!user) { %>
+            <div class="mt-3 pt-3 border-t border-gray-100 text-xs text-gray-500">
+              <i class="fas fa-info-circle mr-1 text-blue-500"></i>
+              Vous êtes en mode invité: <%= limitInfo ? limitInfo.dailyLimit : 2 %> questions/jour. 
+              <a href="/auth/register" class="text-blue-600 hover:underline font-medium">Créez un compte gratuit</a> pour plus!
+            </div>
+          <% } %>
+        </div>
+      </div>
+    </div>
+
+    <!-- Input Area -->
+    <div class="border-t border-gray-100 p-4">
+      <div id="limitAlert" class="hidden mb-3 p-3 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-800"></div>
+      <form id="chatForm" class="flex items-end space-x-3">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+        <div class="flex-1 relative">
+          <textarea
+            id="questionInput"
+            name="question"
+            placeholder="Posez votre question sur un médicament..."
+            class="w-full resize-none border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-12 bg-gray-50 placeholder-gray-400"
+            rows="2"
+            maxlength="500"
+          ></textarea>
+          <span class="absolute bottom-2 right-3 text-xs text-gray-300" id="charCount">0/500</span>
+        </div>
+        <button type="submit" id="sendBtn"
+          class="bg-blue-600 text-white w-12 h-12 rounded-xl hover:bg-blue-700 transition flex items-center justify-center flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed">
+          <i class="fas fa-paper-plane"></i>
+        </button>
+      </form>
+      <p class="text-xs text-gray-400 mt-2 text-center">
+        <i class="fas fa-exclamation-triangle mr-1"></i>
+        Pour information uniquement - ne remplace pas l'avis d'un professionnel de santé
+      </p>
+    </div>
+  </div>
+</div>
+
+<script>
+const chatMessages = document.getElementById('chatMessages');
+const chatForm = document.getElementById('chatForm');
+const questionInput = document.getElementById('questionInput');
+const sendBtn = document.getElementById('sendBtn');
+const charCount = document.getElementById('charCount');
+const limitAlert = document.getElementById('limitAlert');
+
+// Quick questions
+document.querySelectorAll('.quick-question').forEach(btn => {
+  btn.addEventListener('click', function() {
+    questionInput.value = this.textContent.replace(/^[💊🔬⚠️]\s+/, '').trim();
+    questionInput.dispatchEvent(new Event('input'));
+    questionInput.focus();
+  });
+});
+
+// Char counter
+questionInput.addEventListener('input', function() {
+  const len = this.value.length;
+  charCount.textContent = len + '/500';
+  charCount.className = 'absolute bottom-2 right-3 text-xs ' + (len > 450 ? 'text-red-400' : 'text-gray-300');
+});
+
+// Enter to submit
+questionInput.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    chatForm.dispatchEvent(new Event('submit'));
+  }
+});
+
+function addMessage(type, content) {
+  const div = document.createElement('div');
+  if (type === 'user') {
+    div.className = 'flex justify-end';
+    div.innerHTML = `
+      <div class="chat-bubble-user text-white rounded-2xl rounded-tr-sm px-5 py-3 max-w-lg text-sm shadow-sm">
+        ${escapeHtml(content)}
+      </div>`;
+  } else if (type === 'bot') {
+    div.className = 'flex items-start space-x-3';
+    div.innerHTML = `
+      <div class="w-9 h-9 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
+        <i class="fas fa-pills text-white text-sm"></i>
+      </div>
+      <div class="chat-bubble-bot rounded-2xl rounded-tl-sm px-5 py-4 max-w-2xl shadow-sm text-sm">
+        ${renderMarkdown(content)}
+      </div>`;
+  } else if (type === 'typing') {
+    div.id = 'typingIndicator';
+    div.className = 'flex items-start space-x-3';
+    div.innerHTML = `
+      <div class="w-9 h-9 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
+        <i class="fas fa-pills text-white text-sm"></i>
+      </div>
+      <div class="chat-bubble-bot rounded-2xl rounded-tl-sm px-5 py-4 shadow-sm">
+        <div class="typing-dots flex space-x-1">
+          <span class="w-2 h-2 bg-gray-400 rounded-full"></span>
+          <span class="w-2 h-2 bg-gray-400 rounded-full"></span>
+          <span class="w-2 h-2 bg-gray-400 rounded-full"></span>
+        </div>
+      </div>`;
+  }
+  chatMessages.appendChild(div);
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+  return div;
+}
+
+function renderMarkdown(text) {
+  if (!text) return '';
+  return text
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/^# (.*)/gm, '<h3 class="text-base font-bold text-gray-900 mb-2">$1</h3>')
+    .replace(/^## (.*)/gm, '<h4 class="text-sm font-bold text-gray-800 mb-1 mt-3">$1</h4>')
+    .replace(/^  • (.*)/gm, '<li class="text-gray-600 ml-4 text-xs">$1</li>')
+    .replace(/^_(.*?)_$/gm, '<em class="text-gray-400 text-xs">$1</em>')
+    .replace(/\n/g, '<br>');
+}
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.appendChild(document.createTextNode(text));
+  return div.innerHTML;
+}
+
+function renderResult(result) {
+  if (result.type === 'help' || result.type === 'empty') {
+    return result.text;
+  }
+  if (result.type === 'detail') {
+    return result.text || ('**' + result.title + '**\n' + JSON.stringify(result.data));
+  }
+  if (result.type === 'list') {
+    let html = `**${result.title}**\n\n`;
+    if (result.items && result.items.length) {
+      html += result.items.slice(0, 8).join('\n---\n');
+      if (result.items.length > 8) {
+        html += `\n_...et ${result.items.length - 8} autre(s) résultat(s)_`;
+      }
+    }
+    return html;
+  }
+  return JSON.stringify(result);
+}
+
+chatForm.addEventListener('submit', async function(e) {
+  e.preventDefault();
+  const question = questionInput.value.trim();
+  if (!question) return;
+
+  limitAlert.classList.add('hidden');
+  questionInput.value = '';
+  charCount.textContent = '0/500';
+  sendBtn.disabled = true;
+
+  addMessage('user', question);
+  const typing = addMessage('typing');
+
+  try {
+    const formData = new FormData();
+    formData.append('question', question);
+    // Add CSRF token
+    const csrfInput = document.querySelector('[name="_csrf"]');
+    if (csrfInput) formData.append('_csrf', csrfInput.value);
+
+    const response = await fetch('/chat/ask', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ question, _csrf: csrfInput?.value })
+    });
+    const data = await response.json();
+    
+    typing.remove();
+
+    if (data.success) {
+      const text = renderResult(data.result);
+      addMessage('bot', text);
+      
+      // Update limit display
+      if (data.limitInfo && data.limitInfo.dailyLimit !== -1) {
+        const limitBadge = document.querySelector('[class*="restantes"]');
+        if (limitBadge) {
+          limitBadge.textContent = data.limitInfo.remaining + ' / ' + data.limitInfo.dailyLimit + ' restantes';
+          if (data.limitInfo.remaining <= 1) {
+            limitBadge.className = limitBadge.className.replace('bg-green-100 text-green-700', 'bg-red-100 text-red-700');
+          }
+        }
+      }
+    } else if (data.limitReached) {
+      limitAlert.innerHTML = '<i class="fas fa-exclamation-circle mr-2"></i>' + data.error + 
+        (data.limitInfo && !<%= user ? 'true' : 'false' %> ? 
+          ' <a href="/auth/register" class="underline font-medium">Créer un compte</a>' : 
+          ' <a href="/subscription/plans" class="underline font-medium">Voir les plans</a>');
+      limitAlert.classList.remove('hidden');
+    } else {
+      addMessage('bot', '❌ ' + (data.error || 'Erreur interne. Veuillez réessayer.'));
+    }
+  } catch (err) {
+    typing.remove();
+    addMessage('bot', '❌ Erreur de connexion. Veuillez réessayer.');
+  }
+
+  sendBtn.disabled = false;
+  questionInput.focus();
+});
+</script>
+
+<%- include('../layout/footer') %>
+

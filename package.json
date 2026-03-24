@@ -1,0 +1,29 @@
+{
+  "name": "pharmabot",
+  "version": "1.0.0",
+  "description": "PharmaBot - Plateforme pharmaceutique belge intelligente",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "dev": "node app.js"
+  },
+  "dependencies": {
+    "@paypal/checkout-server-sdk": "^1.0.3",
+    "axios": "^1.13.6",
+    "bcryptjs": "^3.0.3",
+    "connect-multiparty": "^2.2.0",
+    "cookie-parser": "^1.4.7",
+    "csurf": "^1.11.0",
+    "dotenv": "^17.3.1",
+    "ejs": "^5.0.1",
+    "express": "^5.2.1",
+    "express-session": "^1.19.0",
+    "express-validator": "^7.3.1",
+    "helmet": "^8.1.0",
+    "method-override": "^3.0.0",
+    "multer": "^2.1.1",
+    "mysql2": "^3.20.0",
+    "stripe": "^20.4.1",
+    "uuid": "^13.0.0"
+  }
+}
