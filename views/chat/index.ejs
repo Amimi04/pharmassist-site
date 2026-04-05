@@ -36,6 +36,51 @@
   <div class="bg-white rounded-2xl shadow-sm border border-gray-200 flex flex-col" style="height: calc(100vh - 280px); min-height: 400px;">
     <!-- Messages -->
     <div class="flex-1 overflow-y-auto p-6 space-y-4" id="chatMessages">
+
+      <!-- Historique de la session précédente.
+           Affiché uniquement pour les utilisateurs connectés.
+           Tout le contenu est échappé via EJS auto-escape pour prévenir XSS.
+           Opacité réduite (opacity-60) pour distinguer visuellement de la session actuelle. -->
+      <% if (typeof recentMessages !== 'undefined' && recentMessages.length > 0) { %>
+
+        <% recentMessages.forEach(function(msg) { %>
+
+          <%# Bulle de l'utilisateur — alignée à droite, style identique à addMessage('user') %>
+          <div class="flex justify-end opacity-60">
+            <div class="bg-blue-600 text-white rounded-2xl rounded-tr-sm px-5 py-3 max-w-lg text-sm shadow-sm break-words">
+              <%= msg.question %>
+            </div>
+          </div>
+
+          <%# Bulle du bot — alignée à gauche, fond gris pour signaler qu'elle est ancienne %>
+          <% if (msg.answer) {
+               const preview = msg.answer.length > 300
+                 ? msg.answer.substring(0, 300) + '...'
+                 : msg.answer;
+          %>
+          <div class="flex items-start space-x-3 opacity-60">
+            <div class="w-9 h-9 bg-gray-400 rounded-full flex items-center justify-center flex-shrink-0">
+              <i class="fas fa-pills text-white text-sm"></i>
+            </div>
+            <div class="bg-gray-100 border border-gray-200 rounded-2xl rounded-tl-sm px-5 py-4 max-w-2xl shadow-sm text-sm text-gray-600 break-words whitespace-pre-line">
+              <%= preview %>
+            </div>
+          </div>
+          <% } %>
+
+        <% }); %>
+
+        <%# Séparateur visuel entre l'historique et la session courante %>
+        <div class="flex items-center gap-3 my-4">
+          <div class="flex-1 h-px bg-gray-200"></div>
+          <span class="text-xs text-gray-400 font-medium whitespace-nowrap">
+            <i class="fas fa-history mr-1"></i>Session précédente
+          </span>
+          <div class="flex-1 h-px bg-gray-200"></div>
+        </div>
+
+      <% } %>
+
       <!-- Welcome message -->
       <div class="flex items-start space-x-3">
         <div class="w-9 h-9 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
@@ -82,10 +127,21 @@
             maxlength="500"
           ></textarea>
           <span class="absolute bottom-2 right-3 text-xs text-gray-300" id="charCount">0/500</span>
+          <!-- Dropdown autocomplétion — positionné sous le textarea -->
+          <div id="autocompleteDropdown"
+               class="hidden absolute left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-50 overflow-hidden">
+          </div>
         </div>
         <button type="submit" id="sendBtn"
           class="bg-blue-600 text-white w-12 h-12 rounded-xl hover:bg-blue-700 transition flex items-center justify-center flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed">
-          <i class="fas fa-paper-plane"></i>
+          <!-- Icône normale — visible quand le bouton est prêt -->
+          <i id="sendIcon" class="fas fa-paper-plane"></i>
+          <!-- Compte à rebours SVG circulaire — visible pendant le debounce de 3 s -->
+          <svg id="sendCountdown" class="hidden w-7 h-7 -rotate-90" viewBox="0 0 32 32" aria-hidden="true">
+            <circle cx="16" cy="16" r="13" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="3"/>
+            <circle id="countdownRing" cx="16" cy="16" r="13" fill="none" stroke="white" stroke-width="3"
+                    stroke-dasharray="81.7" stroke-dashoffset="81.7" stroke-linecap="round"/>
+          </svg>
         </button>
       </form>
       <p class="text-xs text-gray-400 mt-2 text-center">
@@ -99,6 +155,10 @@
 <script>
 const chatMessages = document.getElementById('chatMessages');
 const chatForm = document.getElementById('chatForm');
+
+// Scroll automatique vers le bas au chargement pour afficher la session courante
+// (pas le début de l'historique)
+chatMessages.scrollTop = chatMessages.scrollHeight;
 const questionInput = document.getElementById('questionInput');
 const sendBtn = document.getElementById('sendBtn');
 const charCount = document.getElementById('charCount');
@@ -107,7 +167,7 @@ const limitAlert = document.getElementById('limitAlert');
 // Quick questions
 document.querySelectorAll('.quick-question').forEach(btn => {
   btn.addEventListener('click', function() {
-    questionInput.value = this.textContent.replace(/^[💊🔬⚠️]\s+/, '').trim();
+    questionInput.value = this.textContent.replace(/^[\p{Emoji}\s]+/u, '').trim();
     questionInput.dispatchEvent(new Event('input'));
     questionInput.focus();
   });
@@ -120,11 +180,119 @@ questionInput.addEventListener('input', function() {
   charCount.className = 'absolute bottom-2 right-3 text-xs ' + (len > 450 ? 'text-red-400' : 'text-gray-300');
 });
 
-// Enter to submit
+// ── Autocomplétion ────────────────────────────────────────────────────────────
+const autocompleteDropdown = document.getElementById('autocompleteDropdown');
+let autocompleteTimer = null;
+
+questionInput.addEventListener('input', function() {
+  const val = this.value.trim();
+  clearTimeout(autocompleteTimer);
+  if (val.length < 2) {
+    autocompleteDropdown.classList.add('hidden');
+    return;
+  }
+  // Debounce: attend 300ms avant d'envoyer la requête
+  autocompleteTimer = setTimeout(async () => {
+    try {
+      const res = await fetch('/chat/autocomplete?q=' + encodeURIComponent(val));
+      const items = await res.json();
+      if (!items || items.length === 0) {
+        autocompleteDropdown.classList.add('hidden');
+        return;
+      }
+      autocompleteDropdown.innerHTML = items.map(item =>
+        `<button type="button"
+           class="autocomplete-item block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition border-b border-gray-100 last:border-0"
+           data-name="${escapeHtml(item.mpnm)}">
+           <i class="fas fa-pills mr-2 text-blue-400 text-xs"></i>${escapeHtml(item.mpnm)}
+         </button>`
+      ).join('');
+      autocompleteDropdown.classList.remove('hidden');
+      // Gestion du clic sur un item
+      autocompleteDropdown.querySelectorAll('.autocomplete-item').forEach(btn => {
+        btn.addEventListener('click', function() {
+          questionInput.value = this.dataset.name;
+          questionInput.dispatchEvent(new Event('input'));
+          autocompleteDropdown.classList.add('hidden');
+          questionInput.focus();
+        });
+      });
+    } catch (e) {
+      autocompleteDropdown.classList.add('hidden');
+    }
+  }, 300);
+});
+
+// Fermer le dropdown en cliquant en dehors
+document.addEventListener('click', function(e) {
+  if (!questionInput.contains(e.target) && !autocompleteDropdown.contains(e.target)) {
+    autocompleteDropdown.classList.add('hidden');
+  }
+});
+
+// ── Debounce sendBtn (3 s) ────────────────────────────────────────────────────
+// Logique: chaque frappe réinitialise un timer de 3 s. Le bouton n'est activé
+// qu'après 3 s d'inactivité. Un anneau SVG se remplit progressivement pendant l'attente.
+const sendIcon      = document.getElementById('sendIcon');
+const sendCountdown = document.getElementById('sendCountdown');
+const countdownRing = document.getElementById('countdownRing');
+let sendBtnDebounceTimer = null;
+const DEBOUNCE_MS        = 3000;
+const RING_CIRCUMFERENCE = 81.7; // 2 * π * r = 2 * π * 13 ≈ 81.7
+
+// État initial: désactivé car le champ est vide au chargement
+sendBtn.disabled = true;
+
+function showSendCountdown() {
+  sendIcon.classList.add('hidden');
+  sendCountdown.classList.remove('hidden');
+  // Rembobiner l'anneau à vide (sans transition pour éviter l'animation inverse)
+  countdownRing.style.transition = 'none';
+  countdownRing.style.strokeDashoffset = RING_CIRCUMFERENCE;
+  // Forcer un reflow pour que le reset soit appliqué avant de lancer l'animation
+  void countdownRing.getBoundingClientRect();
+  // Lancer l'animation de remplissage sur DEBOUNCE_MS
+  countdownRing.style.transition = 'stroke-dashoffset ' + DEBOUNCE_MS + 'ms linear';
+  countdownRing.style.strokeDashoffset = '0';
+}
+
+function hideSendCountdown() {
+  sendCountdown.classList.add('hidden');
+  sendIcon.classList.remove('hidden');
+  // Arrêter l'animation proprement
+  countdownRing.style.transition = 'none';
+  countdownRing.style.strokeDashoffset = RING_CIRCUMFERENCE;
+}
+
+questionInput.addEventListener('input', function() {
+  const val = this.value.trim();
+  // Désactiver immédiatement à chaque frappe
+  sendBtn.disabled = true;
+  clearTimeout(sendBtnDebounceTimer);
+
+  if (val.length === 0) {
+    // Champ vide: cacher le countdown, garder le bouton désactivé
+    hideSendCountdown();
+    return;
+  }
+
+  // Champ non-vide: afficher le countdown, puis activer après DEBOUNCE_MS
+  showSendCountdown();
+  sendBtnDebounceTimer = setTimeout(function() {
+    hideSendCountdown();
+    if (questionInput.value.trim() !== '') {
+      sendBtn.disabled = false;
+    }
+  }, DEBOUNCE_MS);
+});
+
+// Enter to submit — respecte le debounce: ne soumet pas si le bouton est désactivé
 questionInput.addEventListener('keydown', function(e) {
   if (e.key === 'Enter' && !e.shiftKey) {
     e.preventDefault();
-    chatForm.dispatchEvent(new Event('submit'));
+    if (!sendBtn.disabled) {
+      chatForm.dispatchEvent(new Event('submit'));
+    }
   }
 });
 
@@ -202,10 +370,66 @@ function renderResult(result) {
   return JSON.stringify(result);
 }
 
+/**
+ * Affiche un message de limite atteinte stylisé directement dans le chatbox.
+ * Propose un bouton d'upgrade ou de création de compte selon le plan actuel.
+ * @param {object} data - La réponse JSON du serveur (limitReached: true)
+ */
+function addLimitReachedMessage(data) {
+  const isGuest   = data.currentPlan === 'guest';
+  const upgradeUrl = data.upgradeUrl || '/subscription';
+  const message    = data.message   || 'Vous avez atteint votre limite quotidienne.';
+
+  // Bouton principal: upgrade ou création de compte
+  const primaryBtn = isGuest
+    ? `<a href="/auth/register"
+          class="inline-flex items-center bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-5 py-2 rounded-xl transition">
+          <i class="fas fa-user-plus mr-2"></i>Créer un compte gratuit
+       </a>`
+    : `<a href="${upgradeUrl}"
+          class="inline-flex items-center bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-5 py-2 rounded-xl transition">
+          <i class="fas fa-arrow-up mr-2"></i>Passer à un abonnement supérieur
+       </a>`;
+
+  // Lien secondaire pour les invités: voir les plans
+  const secondaryLink = isGuest
+    ? `<a href="${upgradeUrl}" class="text-sm text-blue-600 hover:underline font-medium">
+         Voir tous les plans
+       </a>`
+    : '';
+
+  const div = document.createElement('div');
+  div.className = 'flex items-start space-x-3';
+  div.innerHTML = `
+    <div class="w-9 h-9 bg-amber-500 rounded-full flex items-center justify-center flex-shrink-0 text-white text-sm font-bold">
+      🔒
+    </div>
+    <div class="bg-amber-50 border border-amber-200 rounded-2xl rounded-tl-sm px-5 py-4 max-w-2xl shadow-sm">
+      <p class="font-semibold text-amber-800 mb-1">
+        <i class="fas fa-lock mr-1"></i>Limite quotidienne atteinte
+      </p>
+      <p class="text-amber-700 text-sm mb-4">${escapeHtml(message)}</p>
+      <div class="flex flex-wrap items-center gap-3">
+        ${primaryBtn}
+        ${secondaryLink}
+      </div>
+    </div>`;
+
+  chatMessages.appendChild(div);
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
 chatForm.addEventListener('submit', async function(e) {
   e.preventDefault();
   const question = questionInput.value.trim();
   if (!question) return;
+
+  // Fermer le dropdown autocomplétion avant l'envoi
+  autocompleteDropdown.classList.add('hidden');
+  clearTimeout(autocompleteTimer);
+  // Annuler le debounce en cours et remettre l'icône normale pour la durée de la requête
+  clearTimeout(sendBtnDebounceTimer);
+  hideSendCountdown();
 
   limitAlert.classList.add('hidden');
   questionInput.value = '';
@@ -246,11 +470,12 @@ chatForm.addEventListener('submit', async function(e) {
         }
       }
     } else if (data.limitReached) {
-      limitAlert.innerHTML = '<i class="fas fa-exclamation-circle mr-2"></i>' + data.error + 
-        (data.limitInfo && !<%= user ? 'true' : 'false' %> ? 
-          ' <a href="/auth/register" class="underline font-medium">Créer un compte</a>' : 
-          ' <a href="/subscription/plans" class="underline font-medium">Voir les plans</a>');
-      limitAlert.classList.remove('hidden');
+      addLimitReachedMessage(data);
+      // Désactiver le formulaire — l'utilisateur doit upgrader avant de continuer
+      questionInput.disabled = true;
+      sendBtn.disabled = true;
+      questionInput.placeholder = 'Limite quotidienne atteinte — abonnez-vous pour continuer';
+      return; // ne pas ré-activer sendBtn en bas de la fonction
     } else {
       addMessage('bot', '❌ ' + (data.error || 'Erreur interne. Veuillez réessayer.'));
     }
@@ -259,7 +484,9 @@ chatForm.addEventListener('submit', async function(e) {
     addMessage('bot', '❌ Erreur de connexion. Veuillez réessayer.');
   }
 
-  sendBtn.disabled = false;
+  // Après envoi, le champ est vide → le bouton reste désactivé jusqu'à la prochaine frappe
+  // (le debounce se chargera de l'activer après 3 s d'inactivité)
+  sendBtn.disabled = questionInput.value.trim() === '';
   questionInput.focus();
 });
 </script>

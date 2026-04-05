@@ -256,11 +256,15 @@ async function createPharmaTablesMySQL(pool) {
 }
 
 async function importPharmaData(pool) {
-  // Check if already imported
-  const [rows] = await pool.query('SELECT COUNT(*) as cnt FROM gal');
-  if (rows[0].cnt > 0) {
-    console.log('✅ Données pharmaceutiques déjà importées (' + rows[0].cnt + ' formes galéniques)');
+  // Check if already fully imported (vérifie gal ET mpp pour détecter un import partiel)
+  const [galRows] = await pool.query('SELECT COUNT(*) as cnt FROM gal');
+  const [mppRows] = await pool.query('SELECT COUNT(*) as cnt FROM mpp');
+  if (galRows[0].cnt > 0 && mppRows[0].cnt > 0) {
+    console.log(`✅ Données pharmaceutiques déjà importées (${galRows[0].cnt} formes galéniques, ${mppRows[0].cnt} présentations)`);
     return;
+  }
+  if (galRows[0].cnt > 0 && mppRows[0].cnt === 0) {
+    console.log('⚠️  Import partiel détecté (gal OK, mpp manquant) — ré-import en cours...');
   }
 
   const sqlFilePath = path.join(__dirname, '..', 'exportFr.sql');
@@ -270,63 +274,133 @@ async function importPharmaData(pool) {
   }
 
   console.log('📥 Import des données pharmaceutiques belges en cours...');
-  
-  const content = fs.readFileSync(sqlFilePath, 'utf8');
-  
-  // Convert PostgreSQL to MySQL
+
+  // Normalise les fins de ligne Windows (\r\n → \n) avant le split
+  const content = fs.readFileSync(sqlFilePath, 'utf8').replace(/\r\n/g, '\n');
   const lines = content.split('\n');
-  let insertCount = 0;
-  const batchSize = 500;
-  let batch = [];
+
+  // ── Reconstruction des instructions multi-lignes ──────────────────────────
+  // Les colonnes TEXT (note, pos, intro) peuvent contenir des sauts de ligne.
+  // pg_dump produit alors un INSERT qui s'étend sur plusieurs lignes.
+  // On accumule les lignes jusqu'au ';' terminal avant d'exécuter la requête.
+  const statements = [];
+  let currentStmt = null;
 
   for (const line of lines) {
     const trimmed = line.trim();
-    if (!trimmed.startsWith('INSERT INTO')) continue;
 
-    // Convert PostgreSQL booleans 't'/'f' to MySQL 1/0
-    let mysqlLine = trimmed
-      .replace(/, 't'/g, ', 1')
-      .replace(/, 'f'/g, ', 0')
+    if (trimmed.startsWith('INSERT INTO')) {
+      // Nouvelle instruction: sauvegarder la précédente si incomplète
+      if (currentStmt !== null) statements.push(currentStmt);
+      currentStmt = trimmed;
+      if (trimmed.endsWith(';')) {
+        statements.push(currentStmt);
+        currentStmt = null;
+      }
+    } else if (currentStmt !== null) {
+      // Ligne de continuation d'un INSERT multi-lignes (valeur TEXT avec \n)
+      currentStmt += '\n' + line;
+      if (trimmed.endsWith(';')) {
+        statements.push(currentStmt);
+        currentStmt = null;
+      }
+    }
+    // Les lignes CREATE TABLE, SET, ALTER, commentaires, etc. sont ignorées
+  }
+  if (currentStmt !== null) statements.push(currentStmt); // dernier statement
+
+  console.log(`   ${statements.length} instructions INSERT détectées`);
+
+  let insertCount = 0;
+  let errorCount = 0;
+
+  for (let i = 0; i < statements.length; i++) {
+    let stmt = statements[i];
+
+    // ── Conversion PostgreSQL → MySQL ────────────────────────────────────────
+
+    // 1) Booléens PostgreSQL 't'/'f' → entiers MySQL 1/0
+    //    Les patterns ciblent les valeurs isolées dans la liste VALUES.
+    stmt = stmt
+      .replace(/, 't'/g,  ', 1')
+      .replace(/, 'f'/g,  ', 0')
       .replace(/'t'\)/g, '1)')
       .replace(/'f'\)/g, '0)')
       .replace(/, 't',/g, ', 1,')
-      .replace(/, 'f',/g, ', 0,')
-      // Fix reserved words - add backticks
-      .replace(/\b"rank"\b/g, '`rank`')
-      .replace(/\b"index"\b/g, '`index`')
-      .replace(/\b"add"\b/g, '`add`')
-      // Fix encoding issues (Ã©  -> é etc.)
-      .replace(/INSERT INTO (gal|hyr|ir|innm|mp|mpp|sam|ggr_link)/g, 'INSERT IGNORE INTO $1');
+      .replace(/, 'f',/g, ', 0,');
 
-    batch.push(mysqlLine);
-    
-    if (batch.length >= batchSize) {
-      try {
-        for (const stmt of batch) {
-          await pool.query(stmt);
-          insertCount++;
-        }
-      } catch (err) {
-        // Continue on individual errors
-      }
-      batch = [];
-      if (insertCount % 5000 === 0) {
-        console.log(`   ... ${insertCount} enregistrements importés`);
-      }
+    // 2) Mots réservés MySQL 8.0 dans la liste des colonnes (avant VALUES).
+    //    Appliqué uniquement à la partie colonne pour éviter les faux positifs
+    //    dans les valeurs textuelles (note, pos, intro...).
+    //
+    //    Format dans pg_dump (exportFr.sql):
+    //      mp  → rank    apparaît SANS guillemets: rank
+    //      mpp → use     apparaît SANS guillemets: use
+    //      mpp → index   apparaît AVEC guillemets doubles: "index"
+    //      sam → add     apparaît AVEC guillemets doubles: "add"
+    //
+    //    Les guillemets doubles PostgreSQL doivent être remplacés par des
+    //    backticks MySQL. Les mots sans guillemets nécessitent l'ajout de backticks.
+    const valuesIdx = stmt.indexOf(' VALUES ');
+    if (valuesIdx !== -1) {
+      const colsPart = stmt.substring(0, valuesIdx)
+        // Mots avec guillemets doubles PostgreSQL → backticks MySQL
+        .replace(/"index"/g, '`index`')
+        .replace(/"add"/g,   '`add`')
+        .replace(/"rank"/g,  '`rank`')
+        .replace(/"use"/g,   '`use`')
+        // Mots sans guillemets (cas restants) → backticks MySQL
+        .replace(/\brank\b/gi,  '`rank`')
+        .replace(/\buse\b/gi,   '`use`');
+      stmt = colsPart + stmt.substring(valuesIdx);
     }
-  }
 
-  // Process remaining
-  for (const stmt of batch) {
+    // 3) INSERT INTO → INSERT IGNORE INTO (évite les erreurs de clé dupliquée)
+    stmt = stmt.replace(
+      /^INSERT INTO (gal|hyr|ir|innm|mp|mpp|sam|ggr_link)/m,
+      'INSERT IGNORE INTO $1'
+    );
+
+    // ── Exécution individuelle avec gestion d'erreur par requête ─────────────
+    // IMPORTANT: chaque try-catch est INDÉPENDANT — une erreur n'annule pas
+    // les requêtes suivantes (contrairement à l'ancienne approche par batch).
     try {
       await pool.query(stmt);
       insertCount++;
     } catch (err) {
-      // Continue
+      errorCount++;
+      if (errorCount <= 5) {
+        // Affiche les premières erreurs pour aider au diagnostic
+        console.warn(`   ⚠️  Erreur INSERT: ${err.message.substring(0, 150)}`);
+      }
+    }
+
+    if ((i + 1) % 5000 === 0) {
+      console.log(`   ... ${i + 1}/${statements.length} traités (${insertCount} réussis, ${errorCount} erreurs)`);
     }
   }
 
-  console.log(`✅ Import terminé: ${insertCount} enregistrements pharmaceutiques importés`);
+  console.log(`✅ Import terminé: ${insertCount} enregistrements importés, ${errorCount} erreurs ignorées`);
+}
+
+async function addFulltextIndexes(pool) {
+  const indexes = [
+    { sql: 'ALTER TABLE mp   ADD FULLTEXT INDEX ft_mp_mpnm (mpnm)',               name: 'ft_mp_mpnm'   },
+    { sql: 'ALTER TABLE innm ADD FULLTEXT INDEX ft_innm_names (finnm, ninnm, fbase)', name: 'ft_innm_names' },
+  ];
+  for (const { sql, name } of indexes) {
+    try {
+      await pool.query(sql);
+      console.log(`✅ Index FULLTEXT créé: ${name}`);
+    } catch (e) {
+      // errno 1061 = ER_DUP_KEYNAME (index already exists) — safe to ignore
+      if (e.errno === 1061 || e.code === 'ER_DUP_KEYNAME') {
+        console.log(`ℹ️  Index FULLTEXT déjà existant: ${name}`);
+      } else {
+        console.warn(`⚠️  Impossible de créer l'index ${name}:`, e.message);
+      }
+    }
+  }
 }
 
 async function createAdminUser(pool) {
@@ -364,6 +438,7 @@ async function migrate() {
   await createPharmaTablesMySQL(pool);
   await createAppTables(pool);
   await importPharmaData(pool);
+  await addFulltextIndexes(pool);
   await createAdminUser(pool);
   
   await pool.end();
